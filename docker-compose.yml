@@ -1,0 +1,44 @@
+services:
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=file:/data/dev.db
+      - N8N_WEBHOOK_URL=http://n8n:5678/webhook/order-placed
+      - N8N_CALL_RESULT_WEBHOOK=http://n8n:5678/webhook/call-result
+      - AGENT_SERVER_URL=http://agent-server:8000
+      - NEXT_PUBLIC_APP_URL=http://localhost:3000
+    volumes:
+      - web_data:/data
+    restart: unless-stopped
+
+  agent-server:
+    build: ./agent-server
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./agent-server/.env
+    environment:
+      - NEXTJS_API_URL=http://web:3000
+      - N8N_CALL_RESULT_URL=http://n8n:5678/webhook/call-result
+    restart: unless-stopped
+
+  n8n:
+    image: n8nio/n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678
+      - AGENT_SERVER_URL=http://agent-server:8000
+      - NEXTJS_URL=http://web:3000
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+    volumes:
+      - n8n_data:/home/node/.n8n
+    restart: unless-stopped
+
+volumes:
+  web_data:
+  n8n_data:

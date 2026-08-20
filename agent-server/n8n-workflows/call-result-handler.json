@@ -1,0 +1,93 @@
+{
+  "name": "Call Result Handler — Update Order",
+  "active": false,
+  "nodes": [
+    {
+      "id": "wh2",
+      "name": "Call Result Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "call-result-wh",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "call-result",
+        "responseMode": "onReceived",
+        "responseData": "firstEntryJson"
+      }
+    },
+    {
+      "id": "if1",
+      "name": "Was Order Confirmed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [480, 300],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.body.confirmed }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true" }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "hr2",
+      "name": "Mark Order CONFIRMED",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 200],
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.NEXTJS_URL }}/api/orders/{{ $json.body.orderId }}",
+        "sendBody": true,
+        "bodyContentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"status\": \"CONFIRMED\",\n  \"callStatus\": \"CONFIRMED_BY_CALL\"\n}",
+        "options": {}
+      }
+    },
+    {
+      "id": "hr3",
+      "name": "Mark Order CANCELLED",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 420],
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.NEXTJS_URL }}/api/orders/{{ $json.body.orderId }}",
+        "sendBody": true,
+        "bodyContentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"status\": \"CANCELLED\",\n  \"callStatus\": \"CANCELLED_BY_CALL\"\n}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Call Result Webhook": {
+      "main": [
+        [{ "node": "Was Order Confirmed?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Was Order Confirmed?": {
+      "main": [
+        [{ "node": "Mark Order CONFIRMED", "type": "main", "index": 0 }],
+        [{ "node": "Mark Order CANCELLED", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

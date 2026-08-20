@@ -1,0 +1,12 @@
+node_modules
+.next
+.git
+.env
+.env.*
+!.env.example
+prisma/dev.db
+agent-server
+.serena
+.claude
+.headroom
+*.tsbuildinfo
