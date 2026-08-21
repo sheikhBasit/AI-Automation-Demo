@@ -130,7 +130,6 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [720, 480],
-      "disabled": true,
       "onError": "continueRegularOutput",
       "credentials": {
         "googleSheetsOAuth2Api": { "id": "352496e9-9555-4353-aa1c-867e1eed2c6a", "name": "Google Sheets account" }
@@ -140,14 +139,13 @@
         "operation": "append",
         "documentId": {
           "__rl": true,
-          "mode": "list",
-          "value": "",
-          "cachedResultName": "Orders"
+          "mode": "id",
+          "value": "1H6tFQOhXjqMcJJdzFViN2dKWWO5nbQsbi7tsvxlMBCY"
         },
         "sheetName": {
           "__rl": true,
-          "mode": "list",
-          "value": ""
+          "mode": "id",
+          "value": "0"
         },
         "columns": {
           "mappingMode": "autoMapInputData",
@@ -162,7 +160,6 @@
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1.3,
       "position": [1440, 180],
-      "disabled": true,
       "onError": "continueRegularOutput",
       "credentials": {
         "googleCalendarOAuth2Api": { "id": "72292780-02f3-4e43-ae30-971057326b8b", "name": "Google Calendar account" }
@@ -172,8 +169,8 @@
         "operation": "create",
         "calendar": {
           "__rl": true,
-          "mode": "list",
-          "value": ""
+          "mode": "id",
+          "value": "fixibot038@gmail.com"
         },
         "start": "={{ $now }}",
         "end": "={{ $now.plus(1, 'hour') }}",
@@ -226,7 +223,6 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [1680, 480],
-      "disabled": true,
       "onError": "continueRegularOutput",
       "credentials": {
         "googleSheetsOAuth2Api": { "id": "352496e9-9555-4353-aa1c-867e1eed2c6a", "name": "Google Sheets account" }
@@ -236,14 +232,13 @@
         "operation": "update",
         "documentId": {
           "__rl": true,
-          "mode": "list",
-          "value": "",
-          "cachedResultName": "Orders"
+          "mode": "id",
+          "value": "1H6tFQOhXjqMcJJdzFViN2dKWWO5nbQsbi7tsvxlMBCY"
         },
         "sheetName": {
           "__rl": true,
-          "mode": "list",
-          "value": ""
+          "mode": "id",
+          "value": "0"
         },
         "columns": {
           "mappingMode": "autoMapInputData",
