@@ -1,5 +1,16 @@
 import os
 import httpx
+from urllib.parse import urlsplit, urlunsplit
+
+def _to_internal_url(url: str) -> str:
+    """n8n's resume URL uses its browser-facing host (needed for the Google
+    OAuth redirect URI to stay valid), which doesn't resolve from inside this
+    container. Swap in N8N_INTERNAL_URL's host, keep the resume path/token."""
+    internal_base = os.getenv("N8N_INTERNAL_URL")
+    if not internal_base:
+        return url
+    parts, internal = urlsplit(url), urlsplit(internal_base)
+    return urlunsplit((internal.scheme, internal.netloc, parts.path, parts.query, parts.fragment))
 
 async def _post_result(order_id: str, order_data: dict | None, confirmed: bool):
     """POST the call result back to n8n (per-order resume URL, or the
@@ -7,6 +18,7 @@ async def _post_result(order_id: str, order_data: dict | None, confirmed: bool):
     isn't wired up at all."""
     callback_url = (order_data or {}).get("callbackUrl") or os.getenv("N8N_CALL_RESULT_URL")
     if callback_url:
+        callback_url = _to_internal_url(callback_url)
         payload = {**(order_data or {}), "orderId": order_id, "confirmed": confirmed}
         async with httpx.AsyncClient() as client:
             try:
