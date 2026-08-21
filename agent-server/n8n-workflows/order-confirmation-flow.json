@@ -116,7 +116,9 @@
             { "id": "a3", "name": "customerPhone", "value": "={{ $json.body.customerPhone }}", "type": "string" },
             { "id": "a4", "name": "address", "value": "={{ $json.body.address }}", "type": "string" },
             { "id": "a5", "name": "total", "value": "={{ $json.body.total }}", "type": "number" },
-            { "id": "a6", "name": "placedAt", "value": "={{ $now.toISO() }}", "type": "string" }
+            { "id": "a6", "name": "placedAt", "value": "={{ $now.toISO() }}", "type": "string" },
+            { "id": "a7", "name": "status", "value": "PENDING", "type": "string" },
+            { "id": "a8", "name": "confirmedAt", "value": "", "type": "string" }
           ]
         },
         "options": {}
@@ -181,6 +183,75 @@
           "description": "=Order {{ $('Wait for Call Result').item.json.body.orderId }}, confirmed by NexusBarry call.\nAddress: {{ $('Wait for Call Result').item.json.body.address }}\nPhone: {{ $('Wait for Call Result').item.json.body.customerPhone }}\nTotal: ${{ $('Wait for Call Result').item.json.body.total }}"
         }
       }
+    },
+    {
+      "id": "set2",
+      "name": "Prepare Confirmed Row",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [1440, 400],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            { "id": "b1", "name": "orderId", "value": "={{ $('Wait for Call Result').item.json.body.orderId }}", "type": "string" },
+            { "id": "b2", "name": "status", "value": "CONFIRMED", "type": "string" },
+            { "id": "b3", "name": "confirmedAt", "value": "={{ $now.toISO() }}", "type": "string" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "set3",
+      "name": "Prepare Cancelled Row",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [1200, 560],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            { "id": "c1", "name": "orderId", "value": "={{ $('Wait for Call Result').item.json.body.orderId }}", "type": "string" },
+            { "id": "c2", "name": "status", "value": "CANCELLED", "type": "string" },
+            { "id": "c3", "name": "confirmedAt", "value": "={{ $now.toISO() }}", "type": "string" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "sheets2",
+      "name": "Update Sheet Row",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [1680, 480],
+      "disabled": true,
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "googleSheetsOAuth2Api": { "id": "352496e9-9555-4353-aa1c-867e1eed2c6a", "name": "Google Sheets account" }
+      },
+      "parameters": {
+        "resource": "sheet",
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Orders"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": ["orderId"],
+          "value": {}
+        },
+        "options": {}
+      }
     }
   ],
   "connections": {
@@ -206,7 +277,19 @@
       ]
     },
     "Mark Order CONFIRMED": {
-      "main": [[{ "node": "Create Delivery Calendar Event", "type": "main", "index": 0 }]]
+      "main": [[
+        { "node": "Create Delivery Calendar Event", "type": "main", "index": 0 },
+        { "node": "Prepare Confirmed Row", "type": "main", "index": 0 }
+      ]]
+    },
+    "Mark Order CANCELLED": {
+      "main": [[{ "node": "Prepare Cancelled Row", "type": "main", "index": 0 }]]
+    },
+    "Prepare Confirmed Row": {
+      "main": [[{ "node": "Update Sheet Row", "type": "main", "index": 0 }]]
+    },
+    "Prepare Cancelled Row": {
+      "main": [[{ "node": "Update Sheet Row", "type": "main", "index": 0 }]]
     }
   },
   "settings": {
