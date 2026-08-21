@@ -26,6 +26,7 @@ class OrderRequest(BaseModel):
     address: str
     total: float
     items: list
+    callbackUrl: str | None = None
 
 def create_livekit_token(room_name: str, identity: str):
     grant = VideoGrants(room_join=True, room=room_name)
@@ -37,6 +38,7 @@ def create_livekit_token(room_name: str, identity: str):
 @app.post("/initiate-call")
 async def initiate_call(order: OrderRequest, background_tasks: BackgroundTasks):
     try:
+        logger.info(f"initiate-call: orderId={order.orderId} callbackUrl={order.callbackUrl}")
         if not LIVEKIT_API_KEY:
             raise HTTPException(status_code=500, detail="LIVEKIT_API_KEY not configured")
 

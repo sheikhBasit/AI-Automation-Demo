@@ -11,8 +11,8 @@ blue/red gradient theme; the call → confirm loop is wired through n8n.
 Checkout (Next.js) → POST /api/orders → POST /api/trigger-call
                                               │
                                               ▼
-                              n8n: "Order Placed — Trigger AI Call"
-                                              │  POST /initiate-call
+                    n8n: "Order Confirmation Flow" — single workflow, one execution per order
+                                              │  POST /initiate-call (+ per-order callbackUrl)
                                               ▼
                               agent-server (FastAPI + Pipecat)
                         creates a LiveKit room, PATCHes the order to
@@ -22,8 +22,8 @@ Checkout (Next.js) → POST /api/orders → POST /api/trigger-call
                           customer answers on /orders/[id]/call (ringtone via Web Audio API)
                                               │  agent calls confirm_order / cancel_order
                                               ▼
-                              n8n: "Call Result Handler — Update Order"
-                                              │  PATCHes order
+                     POST to the execution's Wait-node resume URL (callbackUrl)
+                                              │  n8n resumes, IF branches, PATCHes order
                                               ▼
                               order.status = CONFIRMED / CANCELLED
 ```
@@ -62,26 +62,32 @@ docker compose exec web npx prisma db seed
 - Agent server: http://localhost:8000/docs
 - n8n: http://localhost:5678
 
-### Wire up the n8n workflows (first time only)
+### Wire up the n8n workflow (first time only)
 
-The two workflows that bridge checkout → agent-server → order status live in
-`agent-server/n8n-workflows/*.json`, already parameterized with `$env.AGENT_SERVER_URL` /
-`$env.NEXTJS_URL` (set by `docker-compose.yml` to the container service names — no hardcoded
-IPs). Import and activate them inside the running n8n container:
+The single workflow that bridges checkout → agent-server → order status lives in
+`agent-server/n8n-workflows/order-confirmation-flow.json`, already parameterized with
+`$env.AGENT_SERVER_URL` / `$env.NEXTJS_URL` (set by `docker-compose.yml` to the container
+service names — no hardcoded IPs). It's one execution per order end to end: a webhook
+trigger fires the agent-server call, a `Wait` node pauses that same execution until the
+agent-server posts the call result back to a per-order resume URL, then an `IF` branches
+to PATCH the order `CONFIRMED` or `CANCELLED`. Import and activate it inside the running
+n8n container:
 
 ```bash
-docker compose cp agent-server/n8n-workflows/order-placed-trigger-call.json n8n:/tmp/wf1.json
-docker compose cp agent-server/n8n-workflows/call-result-handler.json n8n:/tmp/wf2.json
+docker compose cp agent-server/n8n-workflows/order-confirmation-flow.json n8n:/tmp/wf.json
+docker compose exec n8n n8n import:workflow --input=/tmp/wf.json
 
-docker compose exec n8n n8n import:workflow --input=/tmp/wf1.json
-docker compose exec n8n n8n import:workflow --input=/tmp/wf2.json
-
-docker compose exec n8n n8n list:workflow   # note the two new workflow IDs
-docker compose exec n8n n8n publish:workflow --id=<id-of-workflow-1>
-docker compose exec n8n n8n publish:workflow --id=<id-of-workflow-2>
+docker compose exec n8n n8n list:workflow   # note the workflow ID
+docker compose exec n8n n8n publish:workflow --id=<id>
 
 docker compose restart n8n   # activation only takes effect after a restart
 ```
+
+**Gotcha:** the `Wait` node's per-order resume URL is built from n8n's own `WEBHOOK_URL`
+setting, not from a hand-set env var — so it must resolve from wherever agent-server
+actually runs. In `docker-compose.yml`, `n8n`'s `N8N_HOST`/`WEBHOOK_URL` are set to the
+`n8n` service name (not `localhost`) so the resume URL agent-server receives is reachable
+container-to-container. If you repoint n8n at a different host, update those two together.
 
 ## Running it — local dev (no Docker for the app)
 
@@ -126,8 +132,10 @@ docker run -d --name n8n -p 5678:5678 \
   -v n8n_data:/home/node/.n8n n8nio/n8n
 ```
 
-Then import the workflows the same way as above, substituting `docker exec` for
-`docker compose exec`.
+Then import the workflow the same way as above, substituting `docker exec` for
+`docker compose exec`. Here `WEBHOOK_URL=http://localhost:5678` is correct as-is for the
+Wait node's resume URL, since agent-server runs on the host in this path (not in a
+container) and can reach the n8n container via its published port.
 
 ## Try it
 
@@ -136,16 +144,16 @@ email/phone/address. You'll be redirected to `/orders/[id]/call`, which rings (a
 synthesized ringtone, no audio file) once NexusBarry's call is live. Answering opens the
 LiveKit room where the agent reads back the order and asks for confirmation.
 
-To trigger the confirmation step manually without talking to the agent:
+To watch the workflow executions live: open `http://localhost:5678` → the workflow →
+**Executions** tab. An order mid-call shows as a **waiting** execution paused on the
+`Wait` node; open it to see the per-order resume URL, or trigger the confirmation step
+manually without talking to the agent by POSTing to that URL:
 
 ```bash
-curl -X POST http://localhost:5678/webhook/call-result \
+curl -X POST '<resume-url-from-the-waiting-execution>' \
   -H "Content-Type: application/json" \
   -d '{"orderId":"<order-id>","confirmed":true}'
 ```
-
-To watch the workflow executions live: open `http://localhost:5678` → the workflow →
-**Executions** tab.
 
 ## Useful commands
 

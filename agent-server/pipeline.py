@@ -89,7 +89,7 @@ async def run_pipeline(url: str, token: str, room_name: str, order_data: dict):
         return result
 
     async def cancel_order_with_chat(order_id: str):
-        result = await cancel_order(order_id)
+        result = await cancel_order(order_id, order_data)
         await chat_relay.send_chat(result)
         return result
 

@@ -44,7 +44,7 @@ seed:
 	npx prisma db seed
 
 sync-n8n:
-	cd agent-server && .venv/bin/python sync_n8n_workflow.py
+	cd agent-server && .venv/bin/python sync_n8n_workflow.py n8n-workflows/order-confirmation-flow.json
 
 clean:
 	docker-compose down -v

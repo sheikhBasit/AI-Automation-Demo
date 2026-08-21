@@ -1,27 +1,56 @@
 {
-  "name": "Call Result Handler — Update Order",
+  "id": "e4dbc5d1-9024-4c60-a2a6-a44852cd4062",
+  "name": "Order Confirmation Flow",
   "active": false,
   "nodes": [
     {
-      "id": "wh2",
-      "name": "Call Result Webhook",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "order-confirmation",
+        "options": {}
+      },
+      "id": "wh1",
+      "name": "Order Placed Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [240, 300],
-      "webhookId": "call-result-wh",
+      "webhookId": "order-confirmation-wh"
+    },
+    {
       "parameters": {
+        "method": "POST",
+        "url": "={{ $env.AGENT_SERVER_URL }}/initiate-call",
+        "sendBody": true,
+        "bodyContentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"orderId\": \"{{ $json.body.orderId }}\",\n  \"customerName\": \"{{ $json.body.customerName }}\",\n  \"customerPhone\": \"{{ $json.body.customerPhone }}\",\n  \"address\": \"{{ $json.body.address }}\",\n  \"total\": {{ $json.body.total }},\n  \"items\": {{ JSON.stringify($json.body.items) }},\n  \"callbackUrl\": \"{{ $resumeWebhookUrl }}\"\n}",
+        "options": {}
+      },
+      "id": "hr1",
+      "name": "Trigger AI Agent Call",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
         "httpMethod": "POST",
-        "path": "call-result",
-        "responseMode": "onReceived",
-        "responseData": "firstEntryJson"
-      }
+        "options": {}
+      },
+      "id": "wait1",
+      "name": "Wait for Call Result",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [720, 300],
+      "webhookId": "call-result-wh"
     },
     {
       "id": "if1",
       "name": "Was Order Confirmed?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [480, 300],
+      "position": [960, 300],
       "parameters": {
         "conditions": {
           "options": {
@@ -45,7 +74,7 @@
       "name": "Mark Order CONFIRMED",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [720, 200],
+      "position": [1200, 180],
       "parameters": {
         "method": "PATCH",
         "url": "={{ $env.NEXTJS_URL }}/api/orders/{{ $json.body.orderId }}",
@@ -61,7 +90,7 @@
       "name": "Mark Order CANCELLED",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [720, 420],
+      "position": [1200, 420],
       "parameters": {
         "method": "PATCH",
         "url": "={{ $env.NEXTJS_URL }}/api/orders/{{ $json.body.orderId }}",
@@ -74,10 +103,14 @@
     }
   ],
   "connections": {
-    "Call Result Webhook": {
-      "main": [
-        [{ "node": "Was Order Confirmed?", "type": "main", "index": 0 }]
-      ]
+    "Order Placed Webhook": {
+      "main": [[{ "node": "Trigger AI Agent Call", "type": "main", "index": 0 }]]
+    },
+    "Trigger AI Agent Call": {
+      "main": [[{ "node": "Wait for Call Result", "type": "main", "index": 0 }]]
+    },
+    "Wait for Call Result": {
+      "main": [[{ "node": "Was Order Confirmed?", "type": "main", "index": 0 }]]
     },
     "Was Order Confirmed?": {
       "main": [
