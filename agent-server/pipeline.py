@@ -86,15 +86,23 @@ async def run_pipeline(url: str, token: str, room_name: str, order_data: dict):
 
     chat_relay = ChatRelay(transport)
 
+    async def hang_up_after_closing_line():
+        # ponytail: fixed delay for the closing TTS line to play out, instead of
+        # tracking bot-speaking state; bump this if closing lines run long.
+        await asyncio.sleep(6)
+        await task.stop_when_done()
+
     async def confirm_order_with_chat(params: FunctionCallParams):
         result = await confirm_order(order_data["orderId"], order_data)
         await chat_relay.send_chat(result)
         await params.result_callback(result)
+        asyncio.create_task(hang_up_after_closing_line())
 
     async def cancel_order_with_chat(params: FunctionCallParams):
         result = await cancel_order(order_data["orderId"], order_data)
         await chat_relay.send_chat(result)
         await params.result_callback(result)
+        asyncio.create_task(hang_up_after_closing_line())
 
     llm.register_function("confirm_order", confirm_order_with_chat)
     llm.register_function("cancel_order", cancel_order_with_chat)

@@ -22,7 +22,9 @@ async def _post_result(order_id: str, order_data: dict | None, confirmed: bool):
         payload = {**(order_data or {}), "orderId": order_id, "confirmed": confirmed}
         async with httpx.AsyncClient() as client:
             try:
-                await client.post(callback_url, json=payload)
+                resp = await client.post(callback_url, json=payload)
+                if resp.status_code >= 400:
+                    print(f"Call result rejected by {callback_url}: {resp.status_code} {resp.text}")
             except Exception as e:
                 print(f"Failed to post call result to {callback_url}: {e}")
     else:
