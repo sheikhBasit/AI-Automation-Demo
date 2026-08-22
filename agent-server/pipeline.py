@@ -83,6 +83,14 @@ async def run_pipeline(url: str, token: str, room_name: str, order_data: dict):
     Open the call with exactly this, adjusted only for natural phrasing:
     "Hello, am I speaking with {order_data['customerName']}? Great! I'm calling to confirm your recent order with us. You've ordered: {items_summary}. The total comes to ${order_data['total']}. I have your delivery address as {order_data['address']}, and your contact number as {order_data['customerPhone']}. Can you confirm the order and that those details are correct?"
 
+    Only call confirm_order or cancel_order after the customer has clearly and
+    explicitly answered your question, in their own words, in a turn that
+    directly follows it. Never call either function based on a short,
+    garbled, or out-of-context fragment — audio echo or background noise can
+    produce fake transcripts that are not the customer actually speaking. If
+    what you heard doesn't clearly and unambiguously answer your question,
+    say you didn't catch that and ask them to repeat it — do not guess.
+
     If the customer confirms, call the confirm_order function.
     If the customer declines or hesitates, ask once more politely, then call cancel_order if they still decline.
 
