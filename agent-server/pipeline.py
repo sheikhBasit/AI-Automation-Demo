@@ -17,6 +17,7 @@ from pipecat.services.groq.llm import GroqLLMService
 from pipecat.services.llm_service import FunctionCallParams
 from pipecat.transports.livekit.transport import LiveKitTransport, LiveKitParams as LiveKitTransportParams
 from pipecat.audio.vad.silero import SileroVADAnalyzer
+from pipecat.processors.audio.vad_processor import VADProcessor
 
 from tools import confirm_order, cancel_order
 
@@ -56,10 +57,9 @@ async def run_pipeline(url: str, token: str, room_name: str, order_data: dict):
         params=LiveKitTransportParams(
             audio_in_enabled=True,
             audio_out_enabled=True,
-            vad_enabled=True,
-            vad_analyzer=SileroVADAnalyzer(),
         )
     )
+    vad = VADProcessor(vad_analyzer=SileroVADAnalyzer())
 
     # Services
     stt = DeepgramSTTService(api_key=os.getenv("DEEPGRAM_API_KEY"))
@@ -132,6 +132,7 @@ async def run_pipeline(url: str, token: str, room_name: str, order_data: dict):
     pipeline = Pipeline(
         [
             transport.input(),
+            vad,
             stt,
             context_aggregator.user(),
             llm,
