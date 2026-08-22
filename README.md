@@ -45,6 +45,18 @@ cp agent-server/.env.example agent-server/.env
 # LIVEKIT_API_KEY, LIVEKIT_API_SECRET
 ```
 
+### Windows: one-shot setup
+
+With Docker Desktop installed, run from PowerShell in the repo root:
+
+```powershell
+.\setup.ps1
+```
+
+It creates `.env`/`agent-server\.env` from the `.example` files (prompting you to fill
+in API keys), builds and starts all three services, seeds the database, and imports +
+activates the n8n workflow. Equivalent to the manual Docker Compose steps below.
+
 ## Running it — Docker Compose (deployment)
 
 `docker-compose.yml` at the repo root builds and runs all three services — the storefront,
