@@ -53,6 +53,12 @@ export default function CallConfirmationPage({ params }: { params: Promise<{ id:
   const isOnCall = hasAnswered && order?.status === 'PENDING'
 
   useEffect(() => {
+    if (!isConfirmed && !isCancelled) return
+    const redirect = setTimeout(() => router.push(`/orders/${id}`), 3000)
+    return () => clearTimeout(redirect)
+  }, [isConfirmed, isCancelled, id, router])
+
+  useEffect(() => {
     const stopRinging = () => {
       if (ringIntervalRef.current) clearInterval(ringIntervalRef.current)
       ringIntervalRef.current = null
