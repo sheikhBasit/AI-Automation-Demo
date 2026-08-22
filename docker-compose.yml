@@ -10,6 +10,11 @@ services:
       - NEXT_PUBLIC_APP_URL=http://localhost:3000
     volumes:
       - web_data:/data
+      - ./src:/app/src
+      - ./public:/app/public
+      - ./prisma:/app/prisma
+      - ./next.config.ts:/app/next.config.ts
+    command: sh -c "npx prisma generate && npx prisma migrate deploy && npm run dev"
     restart: unless-stopped
 
   agent-server:
@@ -21,6 +26,9 @@ services:
     environment:
       - NEXTJS_API_URL=http://web:3000
       - N8N_INTERNAL_URL=http://n8n:5678
+    volumes:
+      - ./agent-server:/app
+    command: uvicorn agent:app --host 0.0.0.0 --port 8000 --reload
     dns:
       - 8.8.8.8
       - 1.1.1.1

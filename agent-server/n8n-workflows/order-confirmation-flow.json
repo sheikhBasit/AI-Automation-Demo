@@ -23,7 +23,7 @@
         "sendBody": true,
         "bodyContentType": "json",
         "specifyBody": "json",
-        "jsonBody": "={\n  \"orderId\": \"{{ $json.body.orderId }}\",\n  \"customerName\": \"{{ $json.body.customerName }}\",\n  \"customerPhone\": \"{{ $json.body.customerPhone }}\",\n  \"address\": \"{{ $json.body.address }}\",\n  \"total\": {{ $json.body.total }},\n  \"items\": {{ JSON.stringify($json.body.items) }},\n  \"callbackUrl\": \"{{ $resumeWebhookUrl }}\"\n}",
+        "jsonBody": "={\n  \"orderId\": \"{{ $('Order Placed Webhook').item.json.body.orderId }}\",\n  \"customerName\": \"{{ $('Order Placed Webhook').item.json.body.customerName }}\",\n  \"customerPhone\": \"{{ $('Order Placed Webhook').item.json.body.customerPhone }}\",\n  \"address\": \"{{ $('Order Placed Webhook').item.json.body.address }}\",\n  \"total\": {{ $('Order Placed Webhook').item.json.body.total }},\n  \"items\": {{ JSON.stringify($('Order Placed Webhook').item.json.body.items) }},\n  \"callbackUrl\": \"{{ $resumeWebhookUrl }}\"\n}",
         "options": {}
       },
       "id": "hr1",
@@ -251,13 +251,13 @@
   ],
   "connections": {
     "Order Placed Webhook": {
-      "main": [[
-        { "node": "Trigger AI Agent Call", "type": "main", "index": 0 },
-        { "node": "Format Sheet Row", "type": "main", "index": 0 }
-      ]]
+      "main": [[{ "node": "Format Sheet Row", "type": "main", "index": 0 }]]
     },
     "Format Sheet Row": {
       "main": [[{ "node": "Log Order to Sheets", "type": "main", "index": 0 }]]
+    },
+    "Log Order to Sheets": {
+      "main": [[{ "node": "Trigger AI Agent Call", "type": "main", "index": 0 }]]
     },
     "Trigger AI Agent Call": {
       "main": [[{ "node": "Wait for Call Result", "type": "main", "index": 0 }]]
