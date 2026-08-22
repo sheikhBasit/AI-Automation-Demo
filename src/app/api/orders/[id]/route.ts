@@ -47,7 +47,11 @@ export async function PATCH(
     })
 
     return NextResponse.json(order)
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === 'P2025') {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+    }
+    console.error('Update order error:', error)
     return NextResponse.json({ error: 'Failed to update order' }, { status: 500 })
   }
 }
