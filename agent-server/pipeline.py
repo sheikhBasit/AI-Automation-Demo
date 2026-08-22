@@ -7,7 +7,12 @@ from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.llm_context import LLMContext
-from pipecat.processors.aggregators.llm_response_universal import LLMContextAggregatorPair
+from pipecat.processors.aggregators.llm_response_universal import (
+    LLMContextAggregatorPair,
+    LLMUserAggregatorParams,
+)
+from pipecat.turns.user_turn_strategies import UserTurnStrategies
+from pipecat.turns.user_stop import SpeechTimeoutUserTurnStopStrategy
 from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 from pipecat.adapters.schemas.function_schema import FunctionSchema
 from pipecat.adapters.schemas.tools_schema import ToolsSchema
@@ -127,7 +132,18 @@ async def run_pipeline(url: str, token: str, room_name: str, order_data: dict):
     ]
 
     context = LLMContext(messages=messages, tools=tools)
-    context_aggregator = LLMContextAggregatorPair(context)
+    # ponytail: the default turn-stop strategy runs a local neural end-of-turn
+    # model (LocalSmartTurnAnalyzerV3), which without GPU acceleration took up
+    # to ~70s to decide the caller had stopped talking. Plain VAD-silence
+    # timeout is instant and plenty for a phone call.
+    context_aggregator = LLMContextAggregatorPair(
+        context,
+        user_params=LLMUserAggregatorParams(
+            user_turn_strategies=UserTurnStrategies(
+                stop=[SpeechTimeoutUserTurnStopStrategy(user_speech_timeout=0.6)]
+            )
+        ),
+    )
 
     pipeline = Pipeline(
         [
