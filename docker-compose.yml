@@ -21,6 +21,9 @@ services:
     environment:
       - NEXTJS_API_URL=http://web:3000
       - N8N_INTERNAL_URL=http://n8n:5678
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     restart: unless-stopped
 
   n8n:
@@ -34,6 +37,9 @@ services:
       - AGENT_SERVER_URL=http://agent-server:8000
       - NEXTJS_URL=http://web:3000
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     volumes:
       - n8n_data:/home/node/.n8n
     restart: unless-stopped
