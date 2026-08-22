@@ -9,9 +9,12 @@ from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.llm_context import LLMContext
 from pipecat.processors.aggregators.llm_response_universal import LLMContextAggregatorPair
 from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
+from pipecat.adapters.schemas.function_schema import FunctionSchema
+from pipecat.adapters.schemas.tools_schema import ToolsSchema
 from pipecat.services.deepgram.stt import DeepgramSTTService
 from pipecat.services.deepgram.tts import DeepgramTTSService
 from pipecat.services.groq.llm import GroqLLMService
+from pipecat.services.llm_service import FunctionCallParams
 from pipecat.transports.livekit.transport import LiveKitTransport, LiveKitParams as LiveKitTransportParams
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 
@@ -83,25 +86,39 @@ async def run_pipeline(url: str, token: str, room_name: str, order_data: dict):
 
     chat_relay = ChatRelay(transport)
 
-    async def confirm_order_with_chat(order_id: str):
-        result = await confirm_order(order_id, order_data)
+    async def confirm_order_with_chat(params: FunctionCallParams):
+        result = await confirm_order(order_data["orderId"], order_data)
         await chat_relay.send_chat(result)
-        return result
+        await params.result_callback(result)
 
-    async def cancel_order_with_chat(order_id: str):
-        result = await cancel_order(order_id, order_data)
+    async def cancel_order_with_chat(params: FunctionCallParams):
+        result = await cancel_order(order_data["orderId"], order_data)
         await chat_relay.send_chat(result)
-        return result
+        await params.result_callback(result)
 
-    # We register tools (mock implementation here to show how pipecat binds functions)
     llm.register_function("confirm_order", confirm_order_with_chat)
     llm.register_function("cancel_order", cancel_order_with_chat)
+
+    tools = ToolsSchema(standard_tools=[
+        FunctionSchema(
+            name="confirm_order",
+            description="Call this when the customer explicitly confirms the order.",
+            properties={},
+            required=[],
+        ),
+        FunctionSchema(
+            name="cancel_order",
+            description="Call this when the customer explicitly declines or cancels the order.",
+            properties={},
+            required=[],
+        ),
+    ])
 
     messages = [
         {"role": "system", "content": prompt}
     ]
 
-    context = LLMContext(messages=messages)
+    context = LLMContext(messages=messages, tools=tools)
     context_aggregator = LLMContextAggregatorPair(context)
 
     pipeline = Pipeline(
