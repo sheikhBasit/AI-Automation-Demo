@@ -176,8 +176,8 @@
         "end": "={{ $now.plus(1, 'hour') }}",
         "useDefaultReminders": true,
         "additionalFields": {
-          "summary": "=Deliver order for {{ $('Wait for Call Result').item.json.body.customerName }}",
-          "description": "=Order {{ $('Wait for Call Result').item.json.body.orderId }}, confirmed by NexusBarry call.\nAddress: {{ $('Wait for Call Result').item.json.body.address }}\nPhone: {{ $('Wait for Call Result').item.json.body.customerPhone }}\nTotal: ${{ $('Wait for Call Result').item.json.body.total }}"
+          "summary": "=Deliver order for {{ $('Wait for Call Result').first().json.body.customerName }}",
+          "description": "=Order {{ $('Wait for Call Result').first().json.body.orderId }}, confirmed by NexusBarry call.\nAddress: {{ $('Wait for Call Result').first().json.body.address }}\nPhone: {{ $('Wait for Call Result').first().json.body.customerPhone }}\nTotal: ${{ $('Wait for Call Result').first().json.body.total }}"
         }
       }
     },
@@ -191,7 +191,7 @@
         "mode": "manual",
         "assignments": {
           "assignments": [
-            { "id": "b1", "name": "orderId", "value": "={{ $('Wait for Call Result').item.json.body.orderId }}", "type": "string" },
+            { "id": "b1", "name": "orderId", "value": "={{ $('Wait for Call Result').first().json.body.orderId }}", "type": "string" },
             { "id": "b2", "name": "status", "value": "CONFIRMED", "type": "string" },
             { "id": "b3", "name": "confirmedAt", "value": "={{ $now.toISO() }}", "type": "string" }
           ]
@@ -209,7 +209,7 @@
         "mode": "manual",
         "assignments": {
           "assignments": [
-            { "id": "c1", "name": "orderId", "value": "={{ $('Wait for Call Result').item.json.body.orderId }}", "type": "string" },
+            { "id": "c1", "name": "orderId", "value": "={{ $('Wait for Call Result').first().json.body.orderId }}", "type": "string" },
             { "id": "c2", "name": "status", "value": "CANCELLED", "type": "string" },
             { "id": "c3", "name": "confirmedAt", "value": "={{ $now.toISO() }}", "type": "string" }
           ]
